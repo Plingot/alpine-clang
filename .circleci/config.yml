@@ -1,0 +1,82 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/buildback-deps:stretch
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Prepare workspace
+          command: |
+            mkdir versions
+      - run:
+          name: Build alpine-clang
+          command: |
+            docker build -t plingot/alpine-clang -f alpine-clang/Dockerfile .
+            docker run --rm -t plingot/alpine-clang:latest /usr/bin/clang --version > versions/clang-version
+      - run:
+          name: Build blas-lapack
+          command: |
+            docker build -t plingot/blas-lapack -f blas-lapack/Dockerfile .
+            docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64 > versions/lapack-version
+      - persist_to_workspace:
+          root: .
+          paths:
+            - versions
+  push:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Docker login
+          command: |
+            echo "${DOCKERHUB_PASS}" | docker login -u "${DOCKERHUB_USERNAME}" --pasword-stdin
+      - run:
+          name: Set environment
+          command: |
+            echo "export CLANG_TAG_NAME=\"$(cat workspace/versions/clang-version | head -n1 | awk '{print $4}')\"" >> $BASH_ENV
+            echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d\"-\" -f2)\"" >> $BASH_ENV
+            source $BASH_ENV
+            echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
+            echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
+            echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
+            echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
+      - run:
+          name: Tag and push clang
+          command: |
+            docker tag plingot/alpine-clang:latest plingot/alpine-clang:${CLANG_TAG_NAME}
+            docker tag plingot/alpine-clang:latest plingot/alpine-clang:${CLANG_SHORT_TAG_NAME}
+            docker tag plingot/alpine-clang:latest plingot/alpine-clang:${CLANG_SHORTEST_TAG_NAME}
+            docker push plingot/alpine-clang:latest
+            docker push plingot/alpine-clang:${CLANG_TAG_NAME}
+            docker push plingot/alpine-clang:${CLANG_SHORT_TAG_NAME}
+            docker push plingot/alpine-clang:${CLANG_SHORTEST_TAG_NAME}
+      - run:
+          name: Tag and push blas-lapack
+          command: |
+            docker tag plingot/blas-lapack:latest plingot/blas-lapack:${LAPACK_TAG_NAME}
+            docker tag plingot/blas-lapack:latest plingot/blas-lapack:${LAPACK_SHORT_TAG_NAME}
+            docker tag plingot/blas-lapack:latest plingot/blas-lapack:${LAPACK_SHORTEST_TAG_NAME}
+            docker push plingot/blas-lapack:latest
+            docker push plingot/blas-lapack:${LAPACK_TAG_NAME}
+            docker push plingot/blas-lapack:${LAPACK_SHORT_TAG_NAME}
+            docker push plingot/blas-lapack:${LAPACK_SHORTEST_TAG_NAME}
+workflows:
+  version: 2
+  build-test-push:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - push:
+          requires:
+            - build
+          context: Plingot-DockerHub
+          filters:
+            branches:
+              only: master
