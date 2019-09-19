@@ -1,8 +1,11 @@
-version: 2
-jobs:
-  build:
+version: 2.1
+executors:
+  docker-publisher:
     docker:
       - image: circleci/buildpack-deps:stretch
+jobs:
+  build:
+    executor: docker-publisher
     steps:
       - checkout
       - setup_remote_docker
@@ -16,17 +19,26 @@ jobs:
             docker build -t plingot/alpine-clang -f alpine-clang/Dockerfile .
             docker run --rm -t plingot/alpine-clang:latest /usr/bin/clang --version > versions/clang-version
       - run:
+          name: Archive alpine-clang
+          command: |
+            docker save -o clang.tar plingot/alpine-clang:latest
+      - run:
           name: Build blas-lapack
           command: |
             docker build -t plingot/blas-lapack -f blas-lapack/Dockerfile .
             docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64 > versions/lapack-version
+      - run:
+          name: Archive blas-lapack
+          command: |
+            docker save -o lapack.tar plingot/blas-lapack:latest
       - persist_to_workspace:
           root: .
           paths:
             - versions
+            - ./clang.tar
+            - ./lapack.tar
   push:
-    docker:
-      - image: circleci/buildpack-deps:stretch
+    executor: docker-publisher
     steps:
       - setup_remote_docker
       - attach_workspace:
@@ -45,6 +57,11 @@ jobs:
             echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
             echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
             echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
+      - run:
+          name: Load images
+          command: |
+            docker load -i workspace/clang.tar
+            docker loag -i workspace/lapack.tar
       - run:
           name: Tag and push clang
           command: |
