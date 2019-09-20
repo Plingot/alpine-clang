@@ -58,6 +58,15 @@ jobs:
             echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
             echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
       - run:
+          name: Debug environment variables
+          command: |
+            echo "CLANG_TAG_NAME=${CLANG_TAG_NAME}"
+            echo "CLANG_SHORT_TAG_NAME=${CLANG_SHORT_TAG_NAME}"
+            echo "CLANG_SHORTEST_TAG_NAME=${CLANG_SHORTEST_TAG_NAME}"
+            echo "LAPACK_TAG_NAME=${LAPACK_TAG_NAME}"
+            echo "LAPACK_SHORT_TAG_NAME=${LAPACK_SHORT_TAG_NAME}"
+            echo "LAPACK_SHORTEST_TAG_NAME=${LAPACK_SHORTEST_TAG_NAME}"
+      - run:
           name: Load images
           command: |
             docker load --input workspace/clang.tar
