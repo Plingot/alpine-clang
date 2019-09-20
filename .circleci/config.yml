@@ -26,7 +26,7 @@ jobs:
           name: Build blas-lapack
           command: |
             docker build -t plingot/blas-lapack -f blas-lapack/Dockerfile .
-            docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64 > versions/lapack-version
+            docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64/cmake/ > versions/lapack-version
       - run:
           name: Archive blas-lapack
           command: |
