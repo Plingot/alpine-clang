@@ -26,7 +26,7 @@ jobs:
           name: Build blas-lapack
           command: |
             docker build -t plingot/blas-lapack -f blas-lapack/Dockerfile .
-            docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64 > versions/lapack-version
+            docker run --rm -t plingot/blas-lapack:latest ls /usr/local/lib64/cmake/ > versions/lapack-version
       - run:
           name: Archive blas-lapack
           command: |
@@ -51,17 +51,26 @@ jobs:
           name: Set environment
           command: |
             echo "export CLANG_TAG_NAME=\"$(cat workspace/versions/clang-version | head -n1 | awk '{print $4}')\"" >> $BASH_ENV
-            echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d\"-\" -f2)\"" >> $BASH_ENV
+            echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n' | sed 's/[^0-9.]*//g')\"" >> $BASH_ENV
             source $BASH_ENV
-            echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
-            echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
-            echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1-2)\"" >> $BASH_ENV
-            echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -c\".\" -f1)\"" >> $BASH_ENV
+            echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
+            echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+            echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
+            echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+      - run:
+          name: Debug environment variables
+          command: |
+            echo "CLANG_TAG_NAME=${CLANG_TAG_NAME}"
+            echo "CLANG_SHORT_TAG_NAME=${CLANG_SHORT_TAG_NAME}"
+            echo "CLANG_SHORTEST_TAG_NAME=${CLANG_SHORTEST_TAG_NAME}"
+            echo "LAPACK_TAG_NAME=${LAPACK_TAG_NAME}"
+            echo "LAPACK_SHORT_TAG_NAME=${LAPACK_SHORT_TAG_NAME}"
+            echo "LAPACK_SHORTEST_TAG_NAME=${LAPACK_SHORTEST_TAG_NAME}"
       - run:
           name: Load images
           command: |
-            docker load -i workspace/clang.tar
-            docker loag -i workspace/lapack.tar
+            docker load --input workspace/clang.tar
+            docker load --input workspace/lapack.tar
       - run:
           name: Tag and push clang
           command: |
