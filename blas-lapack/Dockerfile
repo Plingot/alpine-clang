@@ -15,4 +15,4 @@ WORKDIR /build
 RUN cmake -DCMAKE_BUILD_TYPE=Release ../lapack-release && make && make install
 
 FROM plingot/alpine-clang:latest
-COPY --from=builder ${LIB_DIR} ${LIB_DIR}
+COPY --from=builder /usr/local/lib64 /usr/local/lib64
