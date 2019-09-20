@@ -7,6 +7,7 @@ RUN apk add --no-cache \
   cmake \
   make \
   clang \
+  clang-dev \
   llvm8 \
   pkgconf \
   pkgconfig \
