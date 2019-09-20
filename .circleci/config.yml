@@ -51,7 +51,7 @@ jobs:
           name: Set environment
           command: |
             echo "export CLANG_TAG_NAME=\"$(cat workspace/versions/clang-version | head -n1 | awk '{print $4}')\"" >> $BASH_ENV
-            echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n')\"" >> $BASH_ENV
+            echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n' | sed 's/[^0-9.]*//g')\"" >> $BASH_ENV
             source $BASH_ENV
             echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
