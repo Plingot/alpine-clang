@@ -60,8 +60,8 @@ jobs:
       - run:
           name: Load images
           command: |
-            docker load -i workspace/clang.tar
-            docker loag -i workspace/lapack.tar
+            docker load --input workspace/clang.tar
+            docker loag --input workspace/lapack.tar
       - run:
           name: Tag and push clang
           command: |
