@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM alpine:3.12
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Alpine with cmake, clang and doxygen"
 
@@ -8,7 +8,7 @@ RUN apk add --no-cache \
   make \
   clang \
   clang-dev \
-  llvm8 \
+  llvm10 \
   pkgconf \
   pkgconfig \
   libc-dev \
