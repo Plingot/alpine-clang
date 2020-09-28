@@ -19,6 +19,5 @@ WORKDIR /root/src/emsdk
 RUN ./emsdk update-tags
 RUN ./emsdk install ${EMSDK_VERSION}
 RUN ./emsdk activate ${EMSDK_VERSION}
-RUN . ./emsdk_env.sh
 
 WORKDIR /
