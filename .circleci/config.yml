@@ -2,7 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: circleci/buildpack-deps:20.04
 jobs:
   build:
     executor: docker-publisher
@@ -13,6 +13,10 @@ jobs:
           name: Prepare workspace
           command: |
             mkdir versions
+      - run:
+          name: Setup environment
+          command: |
+            echo 'export EMSDK_VERSION="2.0.4"' >> $BASH_ENV
       - run:
           name: Build alpine-clang
           command: |
@@ -31,12 +35,23 @@ jobs:
           name: Archive blas-lapack
           command: |
             docker save -o lapack.tar plingot/blas-lapack:latest
+      - run:
+          name: Build ubuntu-emsdk
+          command: |
+            export 
+            docker build -t plingot/ubuntu-emsdk -f ubuntu-emsdk/Dockerfile --build-arg EMSDK_VERSION="${EMSDK_VERSION}" .
+            echo "${EMSDK_VERSION}" > versions/emsdk-version
+      - run:
+          name: Archive ubuntu-emsdk
+          command: |
+            docker save -o emsdk.tar plingot/ubuntu-emsdk:latest
       - persist_to_workspace:
           root: .
           paths:
             - versions
             - ./clang.tar
             - ./lapack.tar
+            - ./emsdk.tar
   push:
     executor: docker-publisher
     steps:
@@ -52,11 +67,14 @@ jobs:
           command: |
             echo "export CLANG_TAG_NAME=\"$(cat workspace/versions/clang-version | head -n1 | awk '{print $4}')\"" >> $BASH_ENV
             echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n' | sed 's/[^0-9.]*//g')\"" >> $BASH_ENV
+            echo "export EMSDK_TAG_NAME=\"$(cat workspace/versions/emsdk-version)\"" >> $BASH_ENV
             source $BASH_ENV
             echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
             echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+            echo "export EMSDK_SHORT_TAG_NAME=\"$(echo ${EMSDK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
+            echo "export EMSDK_SHORTEST_TAG_NAME=\"$(echo ${EMSDK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
       - run:
           name: Debug environment variables
           command: |
@@ -66,11 +84,15 @@ jobs:
             echo "LAPACK_TAG_NAME=${LAPACK_TAG_NAME}"
             echo "LAPACK_SHORT_TAG_NAME=${LAPACK_SHORT_TAG_NAME}"
             echo "LAPACK_SHORTEST_TAG_NAME=${LAPACK_SHORTEST_TAG_NAME}"
+            echo "EMSDK_TAG_NAME=${EMSDK_TAG_NAME}"
+            echo "EMSDK_SHORT_TAG_NAME=${EMSDK_SHORT_TAG_NAME}"
+            echo "EMSDK_SHORTEST_TAG_NAME=${EMSDK_SHORTEST_TAG_NAME}"
       - run:
           name: Load images
           command: |
             docker load --input workspace/clang.tar
             docker load --input workspace/lapack.tar
+            docker load --input workspace/emsdk.tar
       - run:
           name: Tag and push clang
           command: |
@@ -91,6 +113,16 @@ jobs:
             docker push plingot/blas-lapack:${LAPACK_TAG_NAME}
             docker push plingot/blas-lapack:${LAPACK_SHORT_TAG_NAME}
             docker push plingot/blas-lapack:${LAPACK_SHORTEST_TAG_NAME}
+      - run:
+          name: Tag and push emsdk
+          command: |
+            docker tag plingot/ubuntu-emsdk:latest plingot/ubuntu-emsdk:${EMSDK_TAG_NAME}
+            docker tag plingot/ubuntu-emsdk:latest plingot/ubuntu-emsdk:${EMSDK_SHORT_TAG_NAME}
+            docker tag plingot/ubuntu-emsdk:latest plingot/ubuntu-emsdk:${EMSDK_SHORTEST_TAG_NAME}
+            docker push plingot/ubuntu-emsdk:latest
+            docker push plingot/ubuntu-emsdk:${EMSDK_TAG_NAME}
+            docker push plingot/ubuntu-emsdk:${EMSDK_SHORT_TAG_NAME}
+            docker push plingot/ubuntu-emsdk:${EMSDK_SHORTEST_TAG_NAME}
 workflows:
   version: 2
   build-test-push:
