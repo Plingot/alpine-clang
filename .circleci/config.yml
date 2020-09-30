@@ -17,15 +17,25 @@ jobs:
           name: Setup environment
           command: |
             echo 'export EMSDK_VERSION="2.0.5"' >> $BASH_ENV
+            echo 'export ALPINE_VERSION="3.12"' >> $BASH_ENV
       - run:
           name: Build alpine-clang
           command: |
-            docker build -t plingot/alpine-clang -f alpine-clang/Dockerfile .
+            docker build -t plingot/alpine-clang -f alpine-clang/Dockerfile --build-arg ALPINE_VERSION=${ALPINE_VERSION} .
             docker run --rm -t plingot/alpine-clang:latest /usr/bin/clang --version > versions/clang-version
       - run:
           name: Archive alpine-clang
           command: |
             docker save -o clang.tar plingot/alpine-clang:latest
+      - run:
+          name: Build alpine-runner
+          command: |
+            docker build -t plingot/alpine-runner -f alpine-runner/Dockerfile --build-arg ALPINE_VERSION=${ALPINE_VERSION} .
+            echo "${ALPINE_VERSION}" > versions/alpine-version
+      - run:
+          name: Archive alpine-runner
+          command: |
+            docker save -o runner.tar plingot/alpine-runner:latest
       - run:
           name: Build blas-lapack
           command: |
@@ -50,6 +60,7 @@ jobs:
           paths:
             - versions
             - ./clang.tar
+            - ./runner.tar
             - ./lapack.tar
             - ./emsdk.tar
   push:
@@ -66,11 +77,14 @@ jobs:
           name: Set environment
           command: |
             echo "export CLANG_TAG_NAME=\"$(cat workspace/versions/clang-version | head -n1 | awk '{print $4}')\"" >> $BASH_ENV
+            echo "export RUNNER_TAG_NAME=\"$(cat workspace/versions/alpine-version\"" >> $BASH_ENV
             echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n' | sed 's/[^0-9.]*//g')\"" >> $BASH_ENV
             echo "export EMSDK_TAG_NAME=\"$(cat workspace/versions/emsdk-version)\"" >> $BASH_ENV
             source $BASH_ENV
             echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+            echo "export RUNNER_SHORT_TAG_NAME=\"$(echo ${RUNNER_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
+            echo "export RUNNER_SHORTEST_TAG_NAME=\"$(echo ${RUNNER_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
             echo "export LAPACK_SHORT_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
             echo "export EMSDK_SHORT_TAG_NAME=\"$(echo ${EMSDK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
@@ -81,6 +95,9 @@ jobs:
             echo "CLANG_TAG_NAME=${CLANG_TAG_NAME}"
             echo "CLANG_SHORT_TAG_NAME=${CLANG_SHORT_TAG_NAME}"
             echo "CLANG_SHORTEST_TAG_NAME=${CLANG_SHORTEST_TAG_NAME}"
+            echo "RUNNER_TAG_NAME=${RUNNER_TAG_NAME}"
+            echo "RUNNER_SHORT_TAG_NAME=${RUNNER_SHORT_TAG_NAME}"
+            echo "RUNNER_SHORTEST_TAG_NAME=${RUNNER_SHORTEST_TAG_NAME}"
             echo "LAPACK_TAG_NAME=${LAPACK_TAG_NAME}"
             echo "LAPACK_SHORT_TAG_NAME=${LAPACK_SHORT_TAG_NAME}"
             echo "LAPACK_SHORTEST_TAG_NAME=${LAPACK_SHORTEST_TAG_NAME}"
@@ -91,6 +108,7 @@ jobs:
           name: Load images
           command: |
             docker load --input workspace/clang.tar
+            docker load --input workspace/runner.tar
             docker load --input workspace/lapack.tar
             docker load --input workspace/emsdk.tar
       - run:
@@ -103,6 +121,16 @@ jobs:
             docker push plingot/alpine-clang:${CLANG_TAG_NAME}
             docker push plingot/alpine-clang:${CLANG_SHORT_TAG_NAME}
             docker push plingot/alpine-clang:${CLANG_SHORTEST_TAG_NAME}
+      - run:
+          name: Tag and push runner
+          command: |
+            docker tag plingot/alpine-runner:latest plingot/alpine-runner:${RUNNER_TAG_NAME}
+            docker tag plingot/alpine-runner:latest plingot/alpine-runner:${RUNNER_SHORT_TAG_NAME}
+            docker tag plingot/alpine-runner:latest plingot/alpine-runner:${RUNNER_SHORTEST_TAG_NAME}
+            docker push plingot/alpine-runner:latest
+            docker push plingot/alpine-runner:${RUNNER_TAG_NAME}
+            docker push plingot/alpine-runner:${RUNNER_SHORT_TAG_NAME}
+            docker push plingot/alpine-runner:${RUNNER_SHORTEST_TAG_NAME}
       - run:
           name: Tag and push blas-lapack
           command: |
