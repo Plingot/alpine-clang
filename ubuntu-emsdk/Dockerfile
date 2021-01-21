@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG UBUNTU_VERSION=20.04
+FROM ubuntu:${UBUNTU_VERSION}
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Ubuntu with emscripten"
 

@@ -18,6 +18,7 @@ jobs:
           command: |
             echo 'export EMSDK_VERSION="2.0.12"' >> $BASH_ENV
             echo 'export ALPINE_VERSION="3.13.0"' >> $BASH_ENV
+            echo 'export UBUNTU_VERSION="20.04"' >> $BASH_ENV
       - run:
           name: Build alpine-clang
           command: |
@@ -48,13 +49,29 @@ jobs:
       - run:
           name: Build ubuntu-emsdk
           command: |
-            export 
-            docker build -t plingot/ubuntu-emsdk -f ubuntu-emsdk/Dockerfile --build-arg EMSDK_VERSION="${EMSDK_VERSION}" .
+            docker build -t plingot/ubuntu-emsdk -f ubuntu-emsdk/Dockerfile --build-arg UBUNTU_VERSION="${UBUNTU_VERSION}" --build-arg EMSDK_VERSION="${EMSDK_VERSION}" .
             echo "${EMSDK_VERSION}" > versions/emsdk-version
       - run:
           name: Archive ubuntu-emsdk
           command: |
             docker save -o emsdk.tar plingot/ubuntu-emsdk:latest
+      - run:
+          name: Build ubuntu-opengl
+          command: |
+            docker build -t plingot/ubuntu-opengl -f ubuntu-opengl/Dockerfile --build-arg UBUNTU_VERSION="${UBUNTU_VERSION}" .
+            echo "${UBUNTU_VERSION}" > versions/ubuntu-version
+      - run:
+          name: Archive ubuntu-opengl
+          command: |
+            docker save -o opengl.tar plingot/ubuntu-opengl:latest
+      - run:
+          name: Build ubuntu-opengl-runner
+          command: |
+            docker build -t plingot/ubuntu-opengl-runner -f ubuntu-opengl-runner/Dockerfile --build-arg UBUNTU_VERSION="${UBUNTU_VERSION}" .
+      - run:
+          name: Archive ubuntu-opengl-runner
+          command: |
+            docker save -o gl-runner.tar plingot/ubuntu-opengl-runner:latest
       - persist_to_workspace:
           root: .
           paths:
@@ -63,6 +80,8 @@ jobs:
             - ./runner.tar
             - ./lapack.tar
             - ./emsdk.tar
+            - ./opengl.tar
+            - ./gl-runner.tar
   push:
     executor: docker-publisher
     steps:
@@ -81,6 +100,10 @@ jobs:
             echo "export LAPACK_TAG_NAME=\"$(cat workspace/versions/lapack-version | cut -d'-' -f2 | tr -d '\n' | sed 's/[^0-9.]*//g')\"" >> $BASH_ENV
             echo "export EMSDK_TAG_NAME=\"$(cat workspace/versions/emsdk-version)\"" >> $BASH_ENV
             source $BASH_ENV
+            echo "export OPENGL_TAG_NAME=\"$(cat workspace/versions/ubuntu-version)\"" >> $BASH_ENV
+            source $BASH_ENV
+            echo "export OPENGL_RUNNER_TAG_NAME=\"$(cat workspace/versions/ubuntu-version)\"" >> $BASH_ENV
+            source $BASH_ENV
             echo "export CLANG_SHORT_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export CLANG_SHORTEST_TAG_NAME=\"$(echo ${CLANG_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
             echo "export RUNNER_SHORT_TAG_NAME=\"$(echo ${RUNNER_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
@@ -89,6 +112,8 @@ jobs:
             echo "export LAPACK_SHORTEST_TAG_NAME=\"$(echo ${LAPACK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
             echo "export EMSDK_SHORT_TAG_NAME=\"$(echo ${EMSDK_TAG_NAME} | cut -d'.' -f1-2)\"" >> $BASH_ENV
             echo "export EMSDK_SHORTEST_TAG_NAME=\"$(echo ${EMSDK_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+            echo "export OPENGL_SHORTEST_TAG_NAME=\"$(echo ${OPENGL_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
+            echo "export OPENGL_RUNNER_SHORTEST_TAG_NAME=\"$(echo ${OPENGL_RUNNER_TAG_NAME} | cut -d'.' -f1)\"" >> $BASH_ENV
       - run:
           name: Debug environment variables
           command: |
@@ -104,6 +129,10 @@ jobs:
             echo "EMSDK_TAG_NAME=${EMSDK_TAG_NAME}"
             echo "EMSDK_SHORT_TAG_NAME=${EMSDK_SHORT_TAG_NAME}"
             echo "EMSDK_SHORTEST_TAG_NAME=${EMSDK_SHORTEST_TAG_NAME}"
+            echo "OPENGL_TAG_NAME=${OPENGL_TAG_NAME}"
+            echo "OPENGL_SHORTEST_TAG_NAME=${OPENGL_SHORTEST_TAG_NAME}"
+            echo "OPENGL_RUNNER_TAG_NAME=${OPENGL_RUNNER_TAG_NAME}"
+            echo "OPENGL_RUNNER_SHORTEST_TAG_NAME=${OPENGL_RUNNER_SHORTEST_TAG_NAME}"
       - run:
           name: Load images
           command: |
@@ -111,6 +140,8 @@ jobs:
             docker load --input workspace/runner.tar
             docker load --input workspace/lapack.tar
             docker load --input workspace/emsdk.tar
+            docker load --input workspace/opengl.tar
+            docker load --input workspace/gl-runner.tar
       - run:
           name: Tag and push clang
           command: |
@@ -151,6 +182,22 @@ jobs:
             docker push plingot/ubuntu-emsdk:${EMSDK_TAG_NAME}
             docker push plingot/ubuntu-emsdk:${EMSDK_SHORT_TAG_NAME}
             docker push plingot/ubuntu-emsdk:${EMSDK_SHORTEST_TAG_NAME}
+      - run:
+          name: Tag and push ubuntu-opengl
+          command: |
+            docker tag plingot/ubuntu-opengl:latest plingot/ubuntu-opengl:${OPENGL_TAG_NAME}
+            docker tag plingot/ubuntu-opengl:latest plingot/ubuntu-opengl:${OPENGL_SHORTEST_TAG_NAME}
+            docker push plingot/ubuntu-opengl:latest
+            docker push plingot/ubuntu-opengl:${OPENGL_TAG_NAME}
+            docker push plingot/ubuntu-opengl:${OPENGL_SHORTEST_TAG_NAME}
+      - run:
+          name: Tag and push ubuntu-opengl-runner
+          command: |
+            docker tag plingot/ubuntu-opengl-runner:latest plingot/ubuntu-opengl-runner:${OPENGL_RUNNER_TAG_NAME}
+            docker tag plingot/ubuntu-opengl-runner:latest plingot/ubuntu-opengl-runner:${OPENGL_RUNNER_SHORTEST_TAG_NAME}
+            docker push plingot/ubuntu-opengl-runner:latest
+            docker push plingot/ubuntu-opengl-runner:${OPENGL_RUNNER_TAG_NAME}
+            docker push plingot/ubuntu-opengl-runner:${OPENGL_RUNNER_SHORTEST_TAG_NAME}
 workflows:
   version: 2
   build-test-push:
