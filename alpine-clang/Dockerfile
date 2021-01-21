@@ -1,4 +1,4 @@
-ARG ALPINE_VERSION=3.12.0
+ARG ALPINE_VERSION=3.13.0
 FROM alpine:${ALPINE_VERSION}
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Alpine with cmake, clang and doxygen"
