@@ -16,8 +16,8 @@ jobs:
       - run:
           name: Setup environment
           command: |
-            echo 'export EMSDK_VERSION="2.0.12"' >> $BASH_ENV
-            echo 'export ALPINE_VERSION="3.13.0"' >> $BASH_ENV
+            echo 'export EMSDK_VERSION="2.0.14"' >> $BASH_ENV
+            echo 'export ALPINE_VERSION="3.13.2"' >> $BASH_ENV
             echo 'export UBUNTU_VERSION="20.04"' >> $BASH_ENV
       - run:
           name: Build alpine-clang
