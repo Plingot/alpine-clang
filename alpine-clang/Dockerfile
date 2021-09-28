@@ -1,4 +1,5 @@
-FROM alpine:3.10
+ARG ALPINE_VERSION=3.13.0
+FROM alpine:${ALPINE_VERSION}
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Alpine with cmake, clang and doxygen"
 
@@ -8,7 +9,7 @@ RUN apk add --no-cache \
   make \
   clang \
   clang-dev \
-  llvm8 \
+  llvm10 \
   pkgconf \
   pkgconfig \
   libc-dev \
