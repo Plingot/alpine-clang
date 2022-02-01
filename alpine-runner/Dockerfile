@@ -1,4 +1,4 @@
-ARG ALPINE_VERSION=3.13.0
+ARG ALPINE_VERSION=3.15.0
 FROM alpine:${ALPINE_VERSION}
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Alpine tailored for running binaries built with plingot/alpine-clang"
