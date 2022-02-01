@@ -9,8 +9,8 @@ RUN apt -q update && apt -y upgrade
 RUN apt -y install \
   libopengl0 \
   libglu1-mesa \
-  libc++1-10 \
-  libc++abi1-10 \
+  libc++1-12 \
+  libc++abi1-12 \
   libglfw3 \
   libglew2.1 \
   libxxf86vm1 \
