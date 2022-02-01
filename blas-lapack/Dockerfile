@@ -1,4 +1,4 @@
-FROM plingot/alpine-clang:latest AS builder
+FROM plingot/alpine-clang:10 AS builder
 LABEL maintainer="Mio Nilsson <mio@plingot.com>"
 LABEL description="Alpine with cmake, clang, doxygen, lapack and blas"
 
@@ -14,5 +14,5 @@ RUN mkdir build
 WORKDIR /build
 RUN cmake -DCMAKE_BUILD_TYPE=Release ../lapack-release && make && make install
 
-FROM plingot/alpine-clang:latest
+FROM plingot/alpine-clang:10
 COPY --from=builder /usr/local/lib64 /usr/local/lib64
